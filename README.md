@@ -33,6 +33,8 @@ Cada cadastro também recebe um limite percentual informado pelo usuário. O pro
 
 O projeto **não** é um sistema de previsão por IA, nem uma medição automática com sensores. As entradas são informadas manualmente.
 
+O capítulo usa **pandas** para exibir tabelas no exemplo do petshop. Aqui, a mesma necessidade de apresentação é resolvida por uma tabela em memória e formatação de texto, sem dependência adicional para o uso local. Para conectar ao Oracle, o pacote `oracledb` continua necessário.
+
 ## Estrutura
 
 ```text
