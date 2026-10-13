@@ -43,11 +43,16 @@ class TestCore(unittest.TestCase):
     def test_numeros_e_datas_invalidos(self) -> None:
         casos = (
             ("area_colhida_ha", 0),
+            ("area_colhida_ha", 1e14),
             ("area_amostrada_m2", -1),
+            ("area_amostrada_m2", 1e-6),
             ("residuo_amostra_kg", -0.1),
+            ("residuo_amostra_kg", 1e-6),
             ("massa_colhida_t", float("nan")),
+            ("massa_colhida_t", 1e-6),
             ("limite_percentual", 100),
             ("limite_percentual", 0),
+            ("limite_percentual", 1e-6),
             ("data_colheita", "2026-02-30"),
             ("talhao", "  "),
         )
@@ -71,6 +76,13 @@ class TestCore(unittest.TestCase):
         self.assertAlmostEqual(validar_registro(dados)["perda_estimada_t"], 0.002)
         dados["area_amostrada_m2"] = 20_001
         with self.assertRaisesRegex(ErroValidacao, "não pode superar"):
+            validar_registro(dados)
+
+    def test_resultado_calculado_nao_pode_exceder_coluna_oracle(self) -> None:
+        dados = dict(self.registro, area_colhida_ha=1e13, area_amostrada_m2=1, residuo_amostra_kg=100)
+        dados.pop("perda_estimada_t")
+        dados.pop("percentual_perda")
+        with self.assertRaisesRegex(ErroValidacao, "perda estimada excede"):
             validar_registro(dados)
 
     def test_ranking_e_percentual_ponderado(self) -> None:
