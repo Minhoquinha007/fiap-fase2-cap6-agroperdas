@@ -85,6 +85,19 @@ class TestCore(unittest.TestCase):
         with self.assertRaisesRegex(ErroValidacao, "perda estimada excede"):
             validar_registro(dados)
 
+    def test_resultados_pequenos_nao_sao_arredondados_a_zero_no_oracle(self) -> None:
+        dados = dict(self.registro, area_colhida_ha=1, area_amostrada_m2=10_000)
+        dados.pop("perda_estimada_t")
+        dados.pop("percentual_perda")
+        dados["residuo_amostra_kg"] = 0.0001
+        with self.assertRaisesRegex(ErroValidacao, "perda estimada ficou abaixo"):
+            validar_registro(dados)
+
+        dados["residuo_amostra_kg"] = 1
+        dados["massa_colhida_t"] = 100_000
+        with self.assertRaisesRegex(ErroValidacao, "percentual de perda ficou abaixo"):
+            validar_registro(dados)
+
     def test_ranking_e_percentual_ponderado(self) -> None:
         segundo = criar_registro(
             data_colheita="2026-10-13",
