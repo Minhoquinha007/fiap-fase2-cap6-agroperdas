@@ -10,12 +10,34 @@ from .core import (
     construir_tabela_memoria,
     criar_registro,
     resumir_registros,
+    validar_campo_cadastro,
 )
 from .storage import ErroArmazenamento, RepositorioJSON, exportar_relatorio
 
 
 RAIZ_PROJETO = Path(__file__).resolve().parent.parent
 CAMINHO_DADOS_PADRAO = RAIZ_PROJETO / "dados" / "registros.json"
+CAMPOS_CADASTRO = (
+    ("data_colheita", "Data da colheita (AAAA-MM-DD): ", "Data da colheita"),
+    ("talhao", "Nome/código do talhão: ", "Talhão"),
+    ("area_colhida_ha", "Área colhida (ha): ", "Área colhida"),
+    ("area_amostrada_m2", "Área da amostra (m²): ", "Área da amostra"),
+    ("residuo_amostra_kg", "Resíduo encontrado na amostra (kg): ", "Resíduo da amostra"),
+    ("massa_colhida_t", "Massa efetivamente colhida (t): ", "Massa colhida"),
+    ("limite_percentual", "Limite de perda para alerta (% entre 0 e 100): ", "Limite de perda"),
+)
+
+
+def _ler_campo_cadastro(
+    campo: str, prompt: str, rotulo: str, dados: dict[str, str | float]
+) -> str | float:
+    """Repete somente o campo inválido; as respostas anteriores são mantidas."""
+    while True:
+        valor = input(prompt).strip()
+        try:
+            return validar_campo_cadastro(campo, valor, dados)
+        except ErroValidacao as erro:
+            print(f"Entrada inválida: {str(erro).replace(campo, rotulo)} Tente novamente.")
 
 
 def mostrar_menu() -> None:
@@ -32,16 +54,36 @@ def mostrar_menu() -> None:
 def _cadastrar(repositorio: RepositorioJSON) -> None:
     print("\nCadastro de uma amostra representativa do talhão")
     print("Use vírgula ou ponto decimal. Área colhida em ha; amostra em m²; resíduo em kg.")
-    dados = {
-        "data_colheita": input("Data da colheita (AAAA-MM-DD): ").strip(),
-        "talhao": input("Nome/código do talhão: ").strip(),
-        "area_colhida_ha": input("Área colhida (ha): ").strip(),
-        "area_amostrada_m2": input("Área da amostra (m²): ").strip(),
-        "residuo_amostra_kg": input("Resíduo encontrado na amostra (kg): ").strip(),
-        "massa_colhida_t": input("Massa efetivamente colhida (t): ").strip(),
-        "limite_percentual": input("Limite de perda para alerta (% entre 0 e 100): ").strip(),
-    }
-    registro = criar_registro(**dados)
+    dados: dict[str, str | float] = {}
+    for campo, prompt, rotulo in CAMPOS_CADASTRO:
+        dados[campo] = _ler_campo_cadastro(campo, prompt, rotulo, dados)
+
+    while True:
+        try:
+            registro = criar_registro(**dados)
+            break
+        except ErroValidacao as erro:
+            # Combinações extremas podem falhar mesmo com campos isolados válidos.
+            print(f"Não foi possível calcular esta combinação: {erro}")
+            print("Corrija apenas um campo; os demais valores serão preservados.")
+            for indice, (_, _, rotulo) in enumerate(CAMPOS_CADASTRO, start=1):
+                print(f"{indice} - {rotulo}")
+            escolha = input("Campo a corrigir [1-7, 0 cancela]: ").strip()
+            if escolha == "0":
+                print("Cadastro cancelado; nenhuma amostra foi salva.")
+                return
+            if escolha not in {str(numero) for numero in range(1, 8)}:
+                print("Escolha um número entre 1 e 7 ou 0 para cancelar.")
+                continue
+            campo, prompt, rotulo = CAMPOS_CADASTRO[int(escolha) - 1]
+            dados[campo] = _ler_campo_cadastro(campo, prompt, rotulo, dados)
+            if campo == "area_colhida_ha":
+                try:
+                    validar_campo_cadastro("area_amostrada_m2", dados["area_amostrada_m2"], dados)
+                except ErroValidacao:
+                    print("A área da amostra também precisa ser corrigida para a nova área colhida.")
+                    amostra = CAMPOS_CADASTRO[3]
+                    dados["area_amostrada_m2"] = _ler_campo_cadastro(*amostra, dados)
     repositorio.adicionar(registro)
     situacao = (
         "ACIMA DO LIMITE"
