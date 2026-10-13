@@ -86,6 +86,30 @@ class RepositorioJSON:
         registros.append(registro)
         self.salvar(registros)
 
+    def atualizar(
+        self, identificador: str, alteracoes: Mapping[str, object]
+    ) -> dict[str, str | float]:
+        """Corrige campos informados, preserva o ID e recalcula os indicadores."""
+        campos_editaveis = {
+            "data_colheita", "talhao", "area_colhida_ha", "area_amostrada_m2",
+            "residuo_amostra_kg", "massa_colhida_t", "limite_percentual",
+        }
+        desconhecidos = set(alteracoes) - campos_editaveis
+        if desconhecidos:
+            raise ErroArmazenamento("Somente os campos de entrada podem ser corrigidos.")
+        registros = self.carregar()
+        for indice, atual in enumerate(registros):
+            if atual["id"] != identificador:
+                continue
+            dados = {**atual, **alteracoes}
+            dados.pop("perda_estimada_t", None)
+            dados.pop("percentual_perda", None)
+            corrigido = validar_registro(dados)
+            registros[indice] = corrigido
+            self.salvar(registros)
+            return corrigido
+        raise ErroArmazenamento("A amostra escolhida não foi encontrada no JSON local.")
+
 
 def exportar_relatorio(caminho: str | Path, registros: list[Mapping[str, object]]) -> Path:
     """Exporta um relatório de texto com método, totais e ranking."""
