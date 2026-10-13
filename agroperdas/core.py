@@ -70,6 +70,38 @@ def _talhao(valor: object) -> str:
     return nome
 
 
+def validar_campo_cadastro(
+    campo: str, valor: object, dados_anteriores: Mapping[str, object]
+) -> str | float:
+    """Valida uma resposta do formulário sem exigir os demais campos.
+
+    O cadastro usa as mesmas regras numéricas do cálculo e do Oracle. A área
+    amostrada é conferida contra a área colhida já informada.
+    """
+    if campo == "data_colheita":
+        return _data_iso(valor)
+    if campo == "talhao":
+        return _talhao(valor)
+    if campo not in {
+        "area_colhida_ha", "area_amostrada_m2", "residuo_amostra_kg",
+        "massa_colhida_t", "limite_percentual",
+    }:
+        raise ValueError(f"Campo de cadastro desconhecido: {campo}")
+
+    numero = _numero(
+        valor, campo, estrito=campo != "residuo_amostra_kg", entrada_oracle=True
+    )
+    if campo == "area_amostrada_m2":
+        area_ha = dados_anteriores.get("area_colhida_ha")
+        if area_ha is not None and numero > float(area_ha) * 10_000:
+            raise ErroValidacao(
+                "area_amostrada_m2 não pode superar a área colhida convertida para m²."
+            )
+    if campo == "limite_percentual" and numero >= 100:
+        raise ErroValidacao("limite_percentual deve ser menor que 100.")
+    return numero
+
+
 def calcular_indicadores(registro: Mapping[str, object]) -> tuple[float, float, bool]:
     """Retorna (perda em toneladas, percentual, acima do limite).
 
@@ -97,9 +129,17 @@ def calcular_indicadores(registro: Mapping[str, object]) -> tuple[float, float, 
         raise ErroValidacao("Os números informados excedem a capacidade do cálculo.")
     if perda_t >= MAX_ORACLE_18_4:
         raise ErroValidacao("A perda estimada excede a capacidade da coluna Oracle.")
+    if 0 < perda_t < MIN_POSITIVO_ORACLE_4:
+        raise ErroValidacao(
+            "A perda estimada ficou abaixo de 0,0001 t e seria arredondada a zero no Oracle."
+        )
     percentual = perda_t / denominador * 100
     if not isfinite(percentual):
         raise ErroValidacao("Não foi possível calcular um percentual finito.")
+    if 0 < percentual < MIN_POSITIVO_ORACLE_4:
+        raise ErroValidacao(
+            "O percentual de perda ficou abaixo de 0,0001% e seria arredondado a zero no Oracle."
+        )
     return perda_t, percentual, percentual > limite
 
 
