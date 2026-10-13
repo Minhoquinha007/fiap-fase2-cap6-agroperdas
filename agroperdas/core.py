@@ -17,7 +17,18 @@ class ErroValidacao(ValueError):
     """Entrada ou registro incompatível com as regras do projeto."""
 
 
-def _numero(valor: object, nome: str, *, minimo: float = 0, estrito: bool = True) -> float:
+MAX_ORACLE_18_4 = 10**14
+MIN_POSITIVO_ORACLE_4 = 0.0001
+
+
+def _numero(
+    valor: object,
+    nome: str,
+    *,
+    minimo: float = 0,
+    estrito: bool = True,
+    entrada_oracle: bool = False,
+) -> float:
     if isinstance(valor, bool):
         raise ErroValidacao(f"{nome} deve ser um número, não um booleano.")
     try:
@@ -29,6 +40,14 @@ def _numero(valor: object, nome: str, *, minimo: float = 0, estrito: bool = True
     if numero < minimo or (estrito and numero == minimo):
         comparacao = "maior que" if estrito else "maior ou igual a"
         raise ErroValidacao(f"{nome} deve ser {comparacao} {minimo}.")
+    if entrada_oracle:
+        if numero >= MAX_ORACLE_18_4:
+            raise ErroValidacao(f"{nome} excede a capacidade da coluna Oracle.")
+        if 0 < numero < MIN_POSITIVO_ORACLE_4:
+            raise ErroValidacao(
+                f"{nome} deve ser zero ou pelo menos {MIN_POSITIVO_ORACLE_4} "
+                "para não ser arredondado a zero no Oracle."
+            )
     return numero
 
 
@@ -57,15 +76,18 @@ def calcular_indicadores(registro: Mapping[str, object]) -> tuple[float, float, 
     A tupla reúne os três resultados da mesma amostra. O percentual usa como
     denominador a soma da massa colhida com a perda estimada.
     """
-    area_ha = _numero(registro.get("area_colhida_ha"), "area_colhida_ha")
-    amostra_m2 = _numero(registro.get("area_amostrada_m2"), "area_amostrada_m2")
+    area_ha = _numero(registro.get("area_colhida_ha"), "area_colhida_ha", entrada_oracle=True)
+    amostra_m2 = _numero(registro.get("area_amostrada_m2"), "area_amostrada_m2", entrada_oracle=True)
     if amostra_m2 > area_ha * 10_000:
         raise ErroValidacao(
             "area_amostrada_m2 não pode superar a área colhida convertida para m²."
         )
-    residuo_kg = _numero(registro.get("residuo_amostra_kg"), "residuo_amostra_kg", estrito=False)
-    colhida_t = _numero(registro.get("massa_colhida_t"), "massa_colhida_t")
-    limite = _numero(registro.get("limite_percentual"), "limite_percentual")
+    residuo_kg = _numero(
+        registro.get("residuo_amostra_kg"), "residuo_amostra_kg",
+        estrito=False, entrada_oracle=True,
+    )
+    colhida_t = _numero(registro.get("massa_colhida_t"), "massa_colhida_t", entrada_oracle=True)
+    limite = _numero(registro.get("limite_percentual"), "limite_percentual", entrada_oracle=True)
     if limite >= 100:
         raise ErroValidacao("limite_percentual deve ser menor que 100.")
 
@@ -73,6 +95,8 @@ def calcular_indicadores(registro: Mapping[str, object]) -> tuple[float, float, 
     denominador = perda_t + colhida_t
     if not isfinite(perda_t) or not isfinite(denominador):
         raise ErroValidacao("Os números informados excedem a capacidade do cálculo.")
+    if perda_t >= MAX_ORACLE_18_4:
+        raise ErroValidacao("A perda estimada excede a capacidade da coluna Oracle.")
     percentual = perda_t / denominador * 100
     if not isfinite(percentual):
         raise ErroValidacao("Não foi possível calcular um percentual finito.")
