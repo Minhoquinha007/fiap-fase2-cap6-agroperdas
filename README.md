@@ -77,14 +77,14 @@ py -m pip install -r requirements.txt
 
 No menu, a sequência esperada é:
 
-1. **Cadastrar medição:** informar data da colheita, talhão, área colhida em hectares, área amostrada em metros quadrados, resíduo encontrado em quilogramas, massa colhida em toneladas e limite percentual. O programa valida e calcula os indicadores.
+1. **Cadastrar medição:** informar data da colheita, talhão, área colhida em hectares, área amostrada em metros quadrados, resíduo encontrado em quilogramas, massa colhida em toneladas e limite percentual. Cada resposta é validada na hora: se estiver incorreta, o programa explica o problema e pede **somente aquele campo novamente**, mantendo os anteriores. Depois, calcula os indicadores.
 2. **Listar medições:** visualizar os registros e o ranking de perdas estimadas.
 3. **Mostrar resumo:** consultar totais de área, massa colhida, perda estimada e percentual agregado. O percentual total é calculado sobre as massas somadas, não pela média simples dos percentuais de cada linha.
 4. **Exportar relatório:** salvar um resumo legível em arquivo de texto. Os registros locais são mantidos em JSON.
 5. **Sincronizar com Oracle:** enviar os registros locais para a tabela criada por `schema.sql`. A integração foi implementada e validada; a execução dessa opção exige configuração e conectividade no ambiente de quem usar o programa.
 6. **Sair:** no menu, digite `0`.
 
-Use ponto ou vírgula para números decimais conforme a entrada solicitada pelo programa. A data deve estar em `AAAA-MM-DD`. Áreas amostrada e colhida e massa colhida devem ser positivas; resíduo pode ser zero; limite deve ser maior que zero e menor que 100. Para evitar falhas ou arredondamento a zero nas colunas numéricas do Oracle, valores positivos abaixo de `0,0001` e valores a partir de `100.000.000.000.000` são rejeitados; a perda calculada também é conferida. Entradas inválidas não viram medições gravadas.
+Use ponto ou vírgula para números decimais conforme a entrada solicitada pelo programa. A data deve estar em `AAAA-MM-DD`. Áreas amostrada e colhida e massa colhida devem ser positivas; a amostra não pode superar a área colhida convertida para m²; resíduo pode ser zero; limite deve ser maior que zero e menor que 100. Para evitar falhas ou arredondamento a zero nas colunas numéricas do Oracle, valores positivos abaixo de `0,0001` e valores a partir de `100.000.000.000.000` são rejeitados; a perda e o percentual calculados também são conferidos. Em combinações numéricas extremas, o programa deixa corrigir um campo sem recomeçar o cadastro. Entradas inválidas não viram medições gravadas.
 
 ## Integração Oracle — configuração pelo estudante
 
@@ -106,7 +106,7 @@ Execute os testes automatizados na pasta do projeto:
 py -m unittest discover -s tests -v
 ```
 
-Os testes verificam regras de cálculo/validação, arquivos e o comportamento da transação Oracle com objetos simulados. Para a conferência manual, cadastre o exemplo de **2 ha / 10 m² / 1 kg / 200 t**, confirme **2 t** e **0,99%**, feche e reabra o programa para conferir o JSON, liste/resuma as medições e exporte o relatório. A integração também foi executada e consultada no banco real, conforme o registro de validação acima.
+Os testes verificam regras de cálculo/validação, repetição do campo incorreto no menu, arquivos e o comportamento da transação Oracle com objetos simulados. Para a conferência manual, escolha `1` e digite primeiro uma data impossível, como `2026-02-30`: o programa deve pedir **novamente só a data**. Depois, cadastre o exemplo de **2 ha / 10 m² / 1 kg / 200 t**, confirme **2 t** e **0,99%**, feche e reabra o programa para conferir o JSON, liste/resuma as medições e exporte o relatório. A integração também foi executada e consultada no banco real, conforme o registro de validação acima.
 
 ## Limitações e boas práticas de entrega
 
