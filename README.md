@@ -89,7 +89,7 @@ Esta etapa exige uma instância Oracle acessível, usuário com permissão para 
 
 A operação usa parâmetros SQL em vez de concatenar valores digitados ao comando. Cada registro tem um UUID; repetir a sincronização atualiza o mesmo identificador, sem criar uma segunda linha para ele. Em caso de falha, a transação é desfeita e o arquivo JSON local é preservado. Isso não garante que problemas externos de rede, permissão ou configuração estejam resolvidos; esses itens precisam ser testados no ambiente real.
 
-**Situação de conectividade em 13/10/2026:** o teste de rede nesta máquina não conseguiu abrir a porta 1521 do servidor indicado no capítulo. Pode ser necessário acesso institucional/VPN ou uma orientação atualizada da FIAP. Não foi feita tentativa de autenticação.
+**Situação de conectividade em 13/10/2026:** o primeiro teste ocorreu em um ambiente restrito e falhou, mas um teste direto posterior confirmou que a porta 1521 do servidor indicado no capítulo está acessível nesta rede. O driver `oracledb` foi instalado em um ambiente virtual local. Ainda faltam credenciais Oracle válidas para criar a tabela e confirmar uma sincronização real; não foi feita tentativa de autenticação.
 
 ## Testes e conferência
 
