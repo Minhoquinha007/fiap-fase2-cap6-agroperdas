@@ -65,8 +65,10 @@ class RepositorioJSON:
             return []
         try:
             dados = json.loads(self.caminho.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as erro:
-            raise ErroArmazenamento("O arquivo de dados não contém JSON válido.") from erro
+        except (json.JSONDecodeError, UnicodeDecodeError) as erro:
+            raise ErroArmazenamento(
+                "O arquivo de dados não contém JSON UTF-8 válido."
+            ) from erro
         if not isinstance(dados, list):
             raise ErroArmazenamento("O arquivo de dados deve conter uma lista de registros.")
         return _sem_duplicatas(dados)
