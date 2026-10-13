@@ -82,15 +82,15 @@ Use ponto ou vírgula para números decimais conforme a entrada solicitada pelo 
 
 ## Integração Oracle — configuração pelo estudante
 
-Esta etapa exige uma instância Oracle acessível, usuário com permissão para criar tabela e dados de conexão fornecidos pela instituição ou pelo proprietário do banco. **Nenhuma conexão Oracle real foi comprovada neste repositório.** Os testes com conexão simulada não substituem essa verificação.
+Esta etapa exige uma instância Oracle acessível, usuário com permissão para criar tabela e dados de conexão fornecidos pela instituição ou pelo proprietário do banco. A conexão e a sincronização foram validadas em uma conta de estudante; os testes simulados continuam úteis para regressão, mas não substituem uma configuração própria para quem clonar o projeto.
 
-1. Copie `.env.example` para um arquivo chamado `.env` **na pasta do projeto** e preencha localmente `AGRO_ORACLE_USER`, `AGRO_ORACLE_PASSWORD` e `AGRO_ORACLE_DSN`. O capítulo 6 apresenta `oracle.fiap.com.br:1521/ORCL` como DSN e informa que o usuário geralmente é o RM; confirme esses dados no seu ambiente. Não envie senha ou `.env` por chat e não os publique no GitHub.
+1. Copie `.env.example` para um arquivo chamado `.env` **na pasta do projeto** e preencha localmente `AGRO_ORACLE_USER`, `AGRO_ORACLE_PASSWORD` e `AGRO_ORACLE_DSN`. A orientação da turma informa o usuário no formato `rm` seguido do RM; confirme os dados de acesso no seu ambiente. Não envie senha ou `.env` por chat e não os publique no GitHub.
 2. Instale `requirements.txt`. Execute `py verificar_oracle.py` para testar a autenticação e verificar se a tabela existe. Se ela estiver ausente, use `py verificar_oracle.py --criar-tabela`: o script só a cria se não existir. Também é possível executar o conteúdo de [`schema.sql`](schema.sql) **uma vez** pelo SQL Developer. O SQL Developer é um cliente; não é o servidor de banco.
 3. Execute `py main.py`, cadastre uma amostra e escolha **Sincronizar com Oracle**. Consulte a tabela `AGROPERDAS_MEDICOES` para verificar se o registro chegou.
 
 A operação usa parâmetros SQL em vez de concatenar valores digitados ao comando. Cada registro tem um UUID; repetir a sincronização atualiza o mesmo identificador, sem criar uma segunda linha para ele. Em caso de falha, a transação é desfeita e o arquivo JSON local é preservado. Isso não garante que problemas externos de rede, permissão ou configuração estejam resolvidos; esses itens precisam ser testados no ambiente real.
 
-**Situação de conectividade em 13/10/2026:** o primeiro teste ocorreu em um ambiente restrito e falhou, mas um teste direto posterior confirmou que a porta 1521 do servidor indicado no capítulo está acessível nesta rede. O driver `oracledb` foi instalado em um ambiente virtual local. Uma tentativa de autenticação retornou ORA-01017 (usuário ou senha inválidos); a tabela e a sincronização real ainda dependem da credencial correta.
+**Validação real em 13/10/2026:** a autenticação e a consulta ao Oracle da FIAP passaram. A tabela `AGROPERDAS_MEDICOES` foi criada no usuário do estudante. Pelo menu do programa, uma amostra fictícia `DEMO-ORACLE` foi registrada localmente e sincronizada; consulta separada confirmou **2,0000 t** de perda estimada e **0,9901%**. Uma segunda sincronização da mesma amostra manteve **uma única linha**, confirmando o comportamento idempotente. As credenciais e o arquivo `.env` permaneceram apenas no computador local.
 
 ## Testes e conferência
 
@@ -100,7 +100,7 @@ Execute os testes automatizados na pasta do projeto:
 py -m unittest discover -s tests -v
 ```
 
-Os testes verificam regras de cálculo/validação, arquivos e o comportamento da transação Oracle com objetos simulados. Para a conferência manual, cadastre o exemplo de **2 ha / 10 m² / 1 kg / 200 t**, confirme **2 t** e **0,99%**, feche e reabra o programa para conferir o JSON, liste/resuma as medições e exporte o relatório. Só marque a integração Oracle como demonstrada depois de executar `schema.sql`, sincronizar e consultar um banco real.
+Os testes verificam regras de cálculo/validação, arquivos e o comportamento da transação Oracle com objetos simulados. Para a conferência manual, cadastre o exemplo de **2 ha / 10 m² / 1 kg / 200 t**, confirme **2 t** e **0,99%**, feche e reabra o programa para conferir o JSON, liste/resuma as medições e exporte o relatório. A integração também foi executada e consultada no banco real, conforme o registro de validação acima.
 
 ## Limitações e boas práticas de entrega
 
@@ -110,4 +110,4 @@ Os testes verificam regras de cálculo/validação, arquivos e o comportamento d
 - Publique código, testes, este README, `schema.sql`, `requirements.txt` e `.env.example`; mantenha fora do Git o `.env`, senhas, dados reais e saídas locais geradas. Confira `git status` antes de publicar.
 - A página do portal aceita anexos (até 20, máximo de 256 MB por arquivo) e mostra prazo de **14/10/2026 às 23h59**. Depois de publicar o repositório, anexe o arquivo de encaminhamento solicitado e confirme o estado **enviado para avaliação**. A publicação no GitHub e o envio ao portal são etapas distintas.
 
-O autor deve preencher e testar os dados de acesso Oracle **em seu próprio ambiente**, caso essa integração seja exigida na correção. Não coloque credenciais no repositório nem em capturas de tela. Depois de publicar, confira se o professor consegue abrir o repositório ou se precisa de convite, conforme as instruções específicas desta atividade.
+Quem reproduzir o projeto precisa configurar seus próprios dados de acesso Oracle. Não coloque credenciais no repositório nem em capturas de tela. Depois de publicar, confira se o professor consegue abrir o repositório ou se precisa de convite, conforme as instruções específicas desta atividade.
