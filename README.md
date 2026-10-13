@@ -84,7 +84,7 @@ No menu, a sequência esperada é:
 5. **Sincronizar com Oracle:** enviar os registros locais para a tabela criada por `schema.sql`. A integração foi implementada e validada; a execução dessa opção exige configuração e conectividade no ambiente de quem usar o programa.
 6. **Sair:** no menu, digite `0`.
 
-Use ponto ou vírgula para números decimais conforme a entrada solicitada pelo programa. A data deve estar em `AAAA-MM-DD`. Áreas amostrada e colhida e massa colhida devem ser positivas; resíduo pode ser zero; limite deve ser maior que zero e menor que 100. Entradas inválidas não devem virar uma medição válida.
+Use ponto ou vírgula para números decimais conforme a entrada solicitada pelo programa. A data deve estar em `AAAA-MM-DD`. Áreas amostrada e colhida e massa colhida devem ser positivas; resíduo pode ser zero; limite deve ser maior que zero e menor que 100. Para evitar falhas ou arredondamento a zero nas colunas numéricas do Oracle, valores positivos abaixo de `0,0001` e valores a partir de `100.000.000.000.000` são rejeitados; a perda calculada também é conferida. Entradas inválidas não viram medições gravadas.
 
 ## Integração Oracle — configuração pelo estudante
 
