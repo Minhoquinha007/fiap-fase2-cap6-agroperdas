@@ -102,6 +102,9 @@ def _exportar(repositorio: RepositorioJSON) -> None:
     padrao = RAIZ_PROJETO / "relatorios" / f"agroperdas_{datetime.now():%Y%m%d_%H%M%S}.txt"
     caminho_texto = input(f"Destino do relatório [Enter = {padrao}]: ").strip()
     destino = Path(caminho_texto) if caminho_texto else padrao
+    if destino.resolve() == repositorio.caminho.resolve():
+        print("Exportação cancelada: o relatório não pode substituir o JSON de dados.")
+        return
     if destino.exists() and input("Arquivo existe. Sobrescrever? [s/N]: ").strip().casefold() != "s":
         print("Exportação cancelada; arquivo existente preservado.")
         return
