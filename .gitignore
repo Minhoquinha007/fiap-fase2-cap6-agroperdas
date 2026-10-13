@@ -1,0 +1,8 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+dados/*.json
+relatorios/*.txt
+ENTREGA_PORTAL.txt
