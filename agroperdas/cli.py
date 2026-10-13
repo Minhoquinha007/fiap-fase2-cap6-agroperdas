@@ -11,6 +11,7 @@ from .core import (
     criar_registro,
     resumir_registros,
     validar_campo_cadastro,
+    validar_registro,
 )
 from .storage import ErroArmazenamento, RepositorioJSON, exportar_relatorio
 
@@ -28,12 +29,18 @@ CAMPOS_CADASTRO = (
 )
 
 
+class OperacaoCancelada(Exception):
+    """O usuário preferiu voltar ao menu sem gravar a operação em andamento."""
+
+
 def _ler_campo_cadastro(
     campo: str, prompt: str, rotulo: str, dados: dict[str, str | float]
 ) -> str | float:
     """Repete somente o campo inválido; as respostas anteriores são mantidas."""
     while True:
         valor = input(prompt).strip()
+        if valor.casefold() == "/cancelar":
+            raise OperacaoCancelada
         try:
             return validar_campo_cadastro(campo, valor, dados)
         except ErroValidacao as erro:
@@ -48,12 +55,14 @@ def mostrar_menu() -> None:
     print("3 - Resumo das perdas")
     print("4 - Exportar relatório de texto")
     print("5 - Sincronizar com Oracle")
+    print("6 - Corrigir uma amostra já cadastrada")
     print("0 - Sair")
 
 
 def _cadastrar(repositorio: RepositorioJSON) -> None:
     print("\nCadastro de uma amostra representativa do talhão")
     print("Use vírgula ou ponto decimal. Área colhida em ha; amostra em m²; resíduo em kg.")
+    print("Digite /cancelar em qualquer campo para voltar ao menu sem salvar a amostra.")
     dados: dict[str, str | float] = {}
     for campo, prompt, rotulo in CAMPOS_CADASTRO:
         dados[campo] = _ler_campo_cadastro(campo, prompt, rotulo, dados)
@@ -95,6 +104,78 @@ def _cadastrar(repositorio: RepositorioJSON) -> None:
         f"Perda estimada: {registro['perda_estimada_t']:.3f} t | "
         f"Percentual: {registro['percentual_perda']:.2f}% | {situacao}."
     )
+
+
+def _corrigir(repositorio: RepositorioJSON) -> None:
+    """Edita uma amostra local sem alterar seu ID nem salvar etapas incompletas."""
+    registros = repositorio.carregar()
+    if not registros:
+        print("Nenhuma amostra cadastrada para corrigir.")
+        return
+
+    print("\nAmostras no JSON local (na ordem de cadastro):")
+    for indice, registro in enumerate(registros, start=1):
+        print(
+            f"{indice} - {registro['data_colheita']} | {registro['talhao']} "
+            f"| ID {registro['id']}"
+        )
+    while True:
+        escolha = input("Número da amostra [0 cancela]: ").strip()
+        if escolha == "0":
+            print("Correção cancelada; nenhum registro foi alterado.")
+            return
+        if escolha.isdecimal() and 1 <= int(escolha) <= len(registros):
+            break
+        print("Escolha um número da lista ou 0 para cancelar.")
+
+    original = registros[int(escolha) - 1]
+    dados = {campo: original[campo] for campo, _, _ in CAMPOS_CADASTRO}
+    alteracoes: dict[str, str | float] = {}
+    print("Escolha os campos a corrigir. Nada é gravado até você selecionar 8.")
+    print("Digite /cancelar em uma pergunta para descartar a correção e voltar ao menu.")
+    while True:
+        print("\nValores atuais da amostra:")
+        for indice, (campo, _, rotulo) in enumerate(CAMPOS_CADASTRO, start=1):
+            print(f"{indice} - {rotulo}: {dados[campo]}")
+        print("8 - Salvar correção | 0 - Cancelar")
+        opcao = input("Sua escolha: ").strip()
+        if opcao == "0":
+            print("Correção cancelada; nenhum registro foi alterado.")
+            return
+        if opcao == "8":
+            if not alteracoes:
+                print("Nenhum campo foi modificado; registro mantido como estava.")
+                return
+            try:
+                previa = validar_registro({"id": original["id"], **dados})
+            except ErroValidacao as erro:
+                print(f"Ainda não é possível salvar: {erro} Corrija o campo indicado.")
+                continue
+            corrigido = repositorio.atualizar(str(original["id"]), alteracoes)
+            print(f"Amostra {corrigido['id']} corrigida no JSON local.")
+            print(
+                f"Perda estimada: {previa['perda_estimada_t']:.3f} t | "
+                f"Percentual: {previa['percentual_perda']:.2f}%."
+            )
+            print("Se essa amostra já estava no Oracle, escolha 5 para sincronizar a correção.")
+            return
+        if not opcao.isdecimal() or not 1 <= int(opcao) <= len(CAMPOS_CADASTRO):
+            print("Escolha um campo entre 1 e 7, 8 para salvar ou 0 para cancelar.")
+            continue
+        campo, prompt, rotulo = CAMPOS_CADASTRO[int(opcao) - 1]
+        atual = dados[campo]
+        print(f"Valor atual de {rotulo}: {atual}")
+        dados[campo] = _ler_campo_cadastro(campo, prompt, rotulo, dados)
+        alteracoes[campo] = dados[campo]
+        try:
+            previa = validar_registro({"id": original["id"], **dados})
+        except ErroValidacao as erro:
+            print(f"Combinação ainda inválida: {erro} Corrija o campo relacionado antes de salvar.")
+        else:
+            print(
+                f"Prévia: perda {previa['perda_estimada_t']:.3f} t; "
+                f"percentual {previa['percentual_perda']:.2f}%."
+            )
 
 
 def _nome_curto(nome: object, largura: int = 18) -> str:
@@ -202,8 +283,12 @@ def executar_cli(caminho_dados: str | Path = CAMINHO_DADOS_PADRAO) -> None:
                 _exportar(repositorio)
             elif escolha == "5":
                 _sincronizar_oracle(repositorio)
+            elif escolha == "6":
+                _corrigir(repositorio)
             else:
                 print("Opção inválida. Escolha um número do menu.")
+        except OperacaoCancelada:
+            print("Operação cancelada; os registros já salvos permanecem intactos.")
         except (EOFError, KeyboardInterrupt):
             print("\nOperação encerrada pelo usuário; dados já salvos permanecem intactos.")
             return
