@@ -22,6 +22,12 @@ O denominador do percentual é a soma da massa efetivamente colhida com a perda 
 
 Cada cadastro também recebe um limite percentual informado pelo usuário. O programa destaca medições cujo percentual calculado é **maior** que esse limite. O alerta é uma regra de acompanhamento escolhida no exercício, não um limite agronômico universal.
 
+## Diferencial da proposta
+
+O AgroPerdas transforma uma pesagem simples de campo em uma **triagem operacional**: calcula a estimativa por talhão, compara-a com um limite definido pelo próprio usuário e ordena as amostras para priorizar a investigação das maiores perdas. O percentual agregado usa as massas somadas, evitando a interpretação incorreta de uma média simples entre talhões de tamanhos diferentes.
+
+O cadastro funciona mesmo sem rede e mantém as medições em JSON local; quando o Oracle está disponível, a sincronização por identificador único permite repetir o envio sem duplicar as linhas. Esse fluxo local-mais-banco é o diferencial técnico do exercício. Não se afirma que o programa descobriu uma causa agronômica ou realizou uma previsão por IA.
+
 ## O que o projeto demonstra
 
 | Conteúdo estudado | Aplicação neste trabalho |
@@ -44,7 +50,7 @@ Fase2_Trabalho3_AgroPerdas/
 │   ├── core.py              # validação, cálculo e resumo
 │   ├── cli.py               # interface e procedimentos do menu
 │   ├── storage.py           # leitura/gravação JSON e relatório texto
-│   └── oracle_db.py         # sincronização opcional
+│   └── oracle_db.py         # sincronização por escolha do usuário
 ├── tests/                   # testes automatizados
 ├── schema.sql               # criação da tabela Oracle
 ├── verificar_oracle.py       # teste de conexão e criação opcional da tabela
@@ -75,7 +81,7 @@ No menu, a sequência esperada é:
 2. **Listar medições:** visualizar os registros e o ranking de perdas estimadas.
 3. **Mostrar resumo:** consultar totais de área, massa colhida, perda estimada e percentual agregado. O percentual total é calculado sobre as massas somadas, não pela média simples dos percentuais de cada linha.
 4. **Exportar relatório:** salvar um resumo legível em arquivo de texto. Os registros locais são mantidos em JSON.
-5. **Sincronizar com Oracle:** enviar os registros locais para a tabela criada por `schema.sql`, somente se a configuração e a conectividade estiverem disponíveis.
+5. **Sincronizar com Oracle:** enviar os registros locais para a tabela criada por `schema.sql`. A integração foi implementada e validada; a execução dessa opção exige configuração e conectividade no ambiente de quem usar o programa.
 6. **Sair:** no menu, digite `0`.
 
 Use ponto ou vírgula para números decimais conforme a entrada solicitada pelo programa. A data deve estar em `AAAA-MM-DD`. Áreas amostrada e colhida e massa colhida devem ser positivas; resíduo pode ser zero; limite deve ser maior que zero e menor que 100. Entradas inválidas não devem virar uma medição válida.
