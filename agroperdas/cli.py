@@ -25,7 +25,7 @@ def mostrar_menu() -> None:
     print("2 - Listar amostras e ranking")
     print("3 - Resumo das perdas")
     print("4 - Exportar relatório de texto")
-    print("5 - Sincronizar com Oracle (opcional)")
+    print("5 - Sincronizar com Oracle")
     print("0 - Sair")
 
 
