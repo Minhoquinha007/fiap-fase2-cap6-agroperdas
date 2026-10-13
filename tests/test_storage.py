@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from agroperdas.cli import _exportar
 from agroperdas.core import ErroValidacao, criar_registro
 from agroperdas.storage import ErroArmazenamento, RepositorioJSON, exportar_relatorio
 
@@ -49,6 +50,12 @@ class TestStorage(unittest.TestCase):
         with self.assertRaises(ErroValidacao):
             self.repositorio.carregar()
 
+    def test_json_nao_utf8_gera_erro_tratado(self) -> None:
+        self.repositorio.caminho.parent.mkdir(parents=True, exist_ok=True)
+        self.repositorio.caminho.write_bytes(b"\xff")
+        with self.assertRaisesRegex(ErroArmazenamento, "UTF-8"):
+            self.repositorio.carregar()
+
     def test_falha_na_troca_preserva_arquivo_antigo(self) -> None:
         self.repositorio.salvar([self.registro])
         original = self.repositorio.caminho.read_bytes()
@@ -65,6 +72,13 @@ class TestStorage(unittest.TestCase):
         self.assertIn("Perda 4.000 t", texto)
         self.assertIn("ACIMA DO LIMITE", texto)
         self.assertIn("extrapolação didática", texto)
+
+    def test_relatorio_nao_sobrescreve_json_de_dados(self) -> None:
+        self.repositorio.salvar([self.registro])
+        original = self.repositorio.caminho.read_bytes()
+        with patch("builtins.input", return_value=str(self.repositorio.caminho)):
+            _exportar(self.repositorio)
+        self.assertEqual(self.repositorio.caminho.read_bytes(), original)
 
 
 if __name__ == "__main__":
