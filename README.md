@@ -47,6 +47,7 @@ Fase2_Trabalho3_AgroPerdas/
 │   └── oracle_db.py         # sincronização opcional
 ├── tests/                   # testes automatizados
 ├── schema.sql               # criação da tabela Oracle
+├── verificar_oracle.py       # teste de conexão e criação opcional da tabela
 ├── requirements.txt         # dependências da integração Oracle
 ├── .env.example             # nomes das variáveis, sem segredos
 └── .gitignore               # exclui credenciais e dados gerados
@@ -83,13 +84,13 @@ Use ponto ou vírgula para números decimais conforme a entrada solicitada pelo 
 
 Esta etapa exige uma instância Oracle acessível, usuário com permissão para criar tabela e dados de conexão fornecidos pela instituição ou pelo proprietário do banco. **Nenhuma conexão Oracle real foi comprovada neste repositório.** Os testes com conexão simulada não substituem essa verificação.
 
-1. Execute o conteúdo de [`schema.sql`](schema.sql) **uma vez** no usuário Oracle escolhido, por exemplo pelo SQL Developer. O SQL Developer é um cliente; não é o servidor de banco.
-2. Copie `.env.example` para um arquivo chamado `.env` **na pasta do projeto** e preencha localmente `AGRO_ORACLE_USER`, `AGRO_ORACLE_PASSWORD` e `AGRO_ORACLE_DSN`. O capítulo 6 apresenta `oracle.fiap.com.br:1521/ORCL` como DSN e informa que o usuário geralmente é o RM; confirme esses dados no seu ambiente. Não envie senha ou `.env` por chat e não os publique no GitHub.
-3. Instale `requirements.txt`, execute `py main.py` e escolha **Sincronizar com Oracle**. Verifique na tabela `AGROPERDAS_MEDICOES` se os registros chegaram.
+1. Copie `.env.example` para um arquivo chamado `.env` **na pasta do projeto** e preencha localmente `AGRO_ORACLE_USER`, `AGRO_ORACLE_PASSWORD` e `AGRO_ORACLE_DSN`. O capítulo 6 apresenta `oracle.fiap.com.br:1521/ORCL` como DSN e informa que o usuário geralmente é o RM; confirme esses dados no seu ambiente. Não envie senha ou `.env` por chat e não os publique no GitHub.
+2. Instale `requirements.txt`. Execute `py verificar_oracle.py` para testar a autenticação e verificar se a tabela existe. Se ela estiver ausente, use `py verificar_oracle.py --criar-tabela`: o script só a cria se não existir. Também é possível executar o conteúdo de [`schema.sql`](schema.sql) **uma vez** pelo SQL Developer. O SQL Developer é um cliente; não é o servidor de banco.
+3. Execute `py main.py`, cadastre uma amostra e escolha **Sincronizar com Oracle**. Consulte a tabela `AGROPERDAS_MEDICOES` para verificar se o registro chegou.
 
 A operação usa parâmetros SQL em vez de concatenar valores digitados ao comando. Cada registro tem um UUID; repetir a sincronização atualiza o mesmo identificador, sem criar uma segunda linha para ele. Em caso de falha, a transação é desfeita e o arquivo JSON local é preservado. Isso não garante que problemas externos de rede, permissão ou configuração estejam resolvidos; esses itens precisam ser testados no ambiente real.
 
-**Situação de conectividade em 13/10/2026:** o primeiro teste ocorreu em um ambiente restrito e falhou, mas um teste direto posterior confirmou que a porta 1521 do servidor indicado no capítulo está acessível nesta rede. O driver `oracledb` foi instalado em um ambiente virtual local. Ainda faltam credenciais Oracle válidas para criar a tabela e confirmar uma sincronização real; não foi feita tentativa de autenticação.
+**Situação de conectividade em 13/10/2026:** o primeiro teste ocorreu em um ambiente restrito e falhou, mas um teste direto posterior confirmou que a porta 1521 do servidor indicado no capítulo está acessível nesta rede. O driver `oracledb` foi instalado em um ambiente virtual local. Uma tentativa de autenticação retornou ORA-01017 (usuário ou senha inválidos); a tabela e a sincronização real ainda dependem da credencial correta.
 
 ## Testes e conferência
 
@@ -110,4 +111,3 @@ Os testes verificam regras de cálculo/validação, arquivos e o comportamento d
 - A página do portal aceita anexos (até 20, máximo de 256 MB por arquivo) e mostra prazo de **14/10/2026 às 23h59**. Depois de publicar o repositório, anexe o arquivo de encaminhamento solicitado e confirme o estado **enviado para avaliação**. A publicação no GitHub e o envio ao portal são etapas distintas.
 
 O autor deve preencher e testar os dados de acesso Oracle **em seu próprio ambiente**, caso essa integração seja exigida na correção. Não coloque credenciais no repositório nem em capturas de tela. Depois de publicar, confira se o professor consegue abrir o repositório ou se precisa de convite, conforme as instruções específicas desta atividade.
-
