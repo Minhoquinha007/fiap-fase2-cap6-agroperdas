@@ -7,7 +7,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from agroperdas.cli import _cadastrar
+from agroperdas.cli import _cadastrar, executar_cli
 from agroperdas.storage import RepositorioJSON
 
 
@@ -126,6 +126,19 @@ class TestCadastroInterativo(unittest.TestCase):
 
         self.assertEqual(registros, [])
         self.assertIn("nenhuma amostra foi salva", saida.getvalue())
+
+    def test_cancelar_em_um_campo_volta_ao_menu_sem_gravar(self) -> None:
+        with TemporaryDirectory() as pasta:
+            caminho = Path(pasta) / "registros.json"
+            saida = StringIO()
+            with patch("builtins.input", side_effect=["1", "2026-10-12", "/cancelar", "0"]):
+                with redirect_stdout(saida):
+                    executar_cli(caminho)
+            registros = RepositorioJSON(caminho).carregar()
+
+        self.assertEqual(registros, [])
+        self.assertIn("Operação cancelada", saida.getvalue())
+        self.assertIn("Até logo", saida.getvalue())
 
 
 if __name__ == "__main__":
