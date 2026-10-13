@@ -1,6 +1,7 @@
 import unittest
 
 from agroperdas.oracle_db import SQL_MERGE, _sincronizar_com_conexao
+from verificar_oracle import _sql_criacao
 
 
 class CursorFalso:
@@ -49,6 +50,11 @@ REGISTRO = {
 
 
 class TesteOracle(unittest.TestCase):
+    def test_schema_carregado_sem_terminador_de_script(self):
+        sql = _sql_criacao()
+        self.assertIn("CREATE TABLE AGROPERDAS_MEDICOES", sql)
+        self.assertFalse(sql.endswith(";"))
+
     def test_merge_usa_binds_e_confirma(self):
         self.assertIn(":id", SQL_MERGE)
         self.assertNotIn(REGISTRO["id"], SQL_MERGE)
