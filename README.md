@@ -2,6 +2,11 @@
 
 Projeto da atividade da Fase 2, capítulo 6 (**Python e além**). O programa registra medições de campo, estima a massa de cana deixada no talhão por extrapolação de uma amostra, mostra um resumo, gera arquivos locais e permite sincronizar os registros com Oracle quando houver um banco configurado. A execução local e o cálculo **não dependem** da conexão Oracle.
 
+## Acompanhamento acadêmico
+
+- Tutor(a): Sabrina Otoni
+- Coordenador(a): André Godoi
+
 > **Escopo:** este é um indicador estimado para exercício de programação. Uma amostra pequena ou mal escolhida não representa necessariamente o talhão inteiro. O resultado não comprova a perda real da colheita, não identifica sua causa e não substitui um protocolo agronômico de amostragem.
 
 ## Problema e cálculo
